@@ -38,7 +38,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
         updateProductAmount({ productId, amount: cartProduct.amount + 1 })
 
-      } else if (product) {
+      } else if (product && productStock && productStock.amount) {
         const newCart = [
           ...cart,
           {
