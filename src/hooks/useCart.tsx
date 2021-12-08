@@ -22,23 +22,22 @@ interface CartContextData {
 const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
-  const [cart, setCart] = useState<Product[]>([]);
-  const [products, setProducts] = useState<Product[]>([])
-  const [stocks, setStocks] = useState<Stock[]>([])
+  const [cart, setCart] = useState<Product[]>([])
 
   const addProduct = async (productId: number) => {
-    const product = products.find(product => product.id === productId)
     const cartProduct = cart.find(product => product.id === productId)
-    const productStock = stocks.find(product => product.id === productId)
+    const { data: productExists } = await api.get<Stock>(`/stock/${productId}`)
+    const { data: product } = await api.get<Product>(`/products/${productId}`)
 
     try {
       // TODO
-
       if (cartProduct) {
 
         updateProductAmount({ productId, amount: cartProduct.amount + 1 })
 
-      } else if (product && productStock && productStock.amount) {
+      } else if (productExists.amount && product) {
+        const { data: product } = await api.get<Product>(`/products/${productId}`)
+
         const newCart = [
           ...cart,
           {
@@ -53,7 +52,11 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         setCart(newCart)
 
         localStorage.setItem('@RocketShoes:cart', JSON.stringify(newCart))
+      } else {
+        toast.error('Erro na adição do produto')
+        return
       }
+
     } catch {
       // TODO
       toast.error('Erro na adição do produto')
@@ -61,6 +64,13 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   };
 
   const removeProduct = (productId: number) => {
+    const cartProduct = cart.find(product => product.id === productId)
+
+    if (!cartProduct) {
+      toast.error('Erro na remoção do produto')
+      return
+    }
+
     const newCart = cart.filter(product => product.id !== productId)
 
     try {
@@ -78,9 +88,19 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     productId,
     amount,
   }: UpdateProductAmount) => {
-    const productStock = stocks.find(product => product.id === productId)
 
-    if (productStock && (amount > productStock.amount || amount < 1)) {
+    if (amount <= 0) {
+      return
+    }
+
+    const { data: productStock } = await api.get<Stock>(`/stock/${productId}`)
+
+    if (!productStock.amount) {
+      toast.error('Erro na alteração de quantidade do produto')
+      return
+    }
+
+    if (amount > productStock.amount) {
       toast.error('Quantidade solicitada fora de estoque')
       return
     }
@@ -120,22 +140,8 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     }
   }
 
-  async function updateProducts() {
-    const products = await api.get<Product[]>('/products')
-
-    setProducts(products.data)
-  }
-
-  async function updateStocks() {
-    const stocks = await api.get<Stock[]>('/stock')
-
-    setStocks(stocks.data)
-  }
-
   useEffect(() => {
     updateCart()
-    updateProducts()
-    updateStocks()
   }, [])
 
   return (

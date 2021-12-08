@@ -31,7 +31,7 @@ const Home = (): JSX.Element => {
     sumAmount = {
       ...sumAmount,
       [product.id]: product.amount
-    }
+    } //caramba isso foi difícil Oo
 
     return sumAmount
   }, {} as CartItemsAmount)
@@ -67,7 +67,6 @@ const Home = (): JSX.Element => {
               <div data-testid="cart-product-quantity">
                 <MdAddShoppingCart size={16} color="#FFF" />
                 {cartItemsAmount[product.id] || 0}
-                {/* {cart.find(productCart => productCart.id === product.id)?.amount || 0} */}
               </div>
 
               <span>ADICIONAR AO CARRINHO</span>
